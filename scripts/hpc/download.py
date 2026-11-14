@@ -5,7 +5,6 @@ Run on the login node:  python scripts/hpc/download.py [--with-train-data]
 import argparse
 import json
 import os
-import zipfile
 from pathlib import Path
 
 from huggingface_hub import hf_hub_download, snapshot_download
@@ -26,14 +25,15 @@ if backbone:
 else:
     print("WARNING: no vlm_model_name in the policy config; check what it loads at start-up.")
 
-assets_root = Path(os.environ["RQ_SRC"]) / "LIBERO-plus" / "libero" / "libero"
-if (assets_root / "assets" / "new_objects").exists():
-    print("LIBERO-plus assets already extracted")
+from redqueen.assets import SENTINEL, extract_assets
+
+assets_dir = Path(os.environ["RQ_SRC"]) / "LIBERO-plus" / "libero" / "libero" / "assets"
+if (assets_dir / SENTINEL).exists():
+    print("LIBERO-plus assets already in place")
 else:
     z = hf_hub_download("Sylvest/LIBERO-plus", "assets.zip", repo_type="dataset")
-    print("extracting", z, "->", assets_root)
-    with zipfile.ZipFile(z) as f:
-        f.extractall(assets_root)
+    print("extracting", z, "->", assets_dir, "(this takes a few minutes)")
+    print("extracted", extract_assets(z, assets_dir), "files")
 
 if a.with_train_data:
     for repo in ("lerobot/libero", "lerobot/libero_plus"):

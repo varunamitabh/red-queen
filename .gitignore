@@ -6,3 +6,10 @@ results/*
 outputs/
 *.mp4
 slurm-*.out
+env/
+src/
+hf/
+cache/
+libero_config/
+versions.txt
+.hf_token

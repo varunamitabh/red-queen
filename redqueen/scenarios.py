@@ -43,6 +43,10 @@ class Scenario:
     def key(self) -> str:
         return f"{self.suite}/{self.task_id}"
 
+    @property
+    def registry_index(self) -> int:
+        """0-based index for lerobot's --env.task_ids (checked on the cluster for id 1 -> index 0)."""
+        return self.task_id - 1
 
 def load_scenarios(path: str | Path, suites: tuple[str, ...] | None = None) -> tuple[list[Scenario], int]:
     """Returns (scenarios, n_skipped). Entries with no difficulty level are skipped."""

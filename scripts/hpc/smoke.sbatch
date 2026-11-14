@@ -15,6 +15,15 @@ nvidia-smi --query-gpu=name,memory.total --format=csv
 python scripts/hpc/render_check.py || {
   echo "EGL failed; retrying with CPU rendering"; export MUJOCO_GL=osmesa; python scripts/hpc/render_check.py; }
 
+# Fail fast, with a clear message, if the asset pack is not where the simulator looks.
+python - <<'PY'
+import os, sys
+from pathlib import Path
+from redqueen.assets import SENTINEL
+p = Path(os.environ["RQ_SRC"]) / "LIBERO-plus/libero/libero/assets" / SENTINEL
+sys.exit(0 if p.exists() else f"LIBERO-plus assets missing: {p}\nRun `bash scripts/hpc/download.sh` on the login node.")
+PY
+
 OUT="$RQ_OUT/smoke-$SLURM_JOB_ID"
 SECONDS=0
 lerobot-eval \

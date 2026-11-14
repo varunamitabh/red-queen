@@ -156,3 +156,44 @@ def test_real_classification_file_loads():
     all_sc, skipped_all = load_scenarios("configs/task_classification.json")
     assert len(all_sc) + skipped_all == 10030 and skipped_all == 121
     assert json.loads(open("configs/task_classification.json").read()).keys() >= {"libero_10"}
+
+@pytest.mark.parametrize("prefix", ["assets/", "", "LIBERO-plus/libero/libero/assets/"])
+def test_asset_pack_extracts_from_any_layout(tmp_path, prefix):
+    import zipfile
+
+    from redqueen.assets import SENTINEL, extract_assets
+
+    z = tmp_path / "assets.zip"
+    with zipfile.ZipFile(z, "w") as f:
+        f.writestr(prefix + SENTINEL, "<mujoco/>")
+        f.writestr(prefix + "new_objects/a/b.xml", "x")
+        f.writestr("__MACOSX/junk", "x")
+    out = tmp_path / "libero" / "assets"
+    assert extract_assets(z, out) == 2
+    assert (out / SENTINEL).exists() and (out / "new_objects/a/b.xml").exists()
+    bad = tmp_path / "bad.zip"
+    with zipfile.ZipFile(bad, "w") as f:
+        f.writestr("readme.txt", "x")
+    with pytest.raises(RuntimeError, match="top-level"):
+        extract_assets(bad, out)
+
+
+def test_clean_instruction_strips_every_suffix_in_the_real_file():
+    import json
+    import re
+
+    from redqueen.language import clean_instruction
+
+    assert clean_instruction("KITCHEN_SCENE3_turn_on_the_stove_and_put_the_moka_pot_on_it_table_1") == (
+        "turn on the stove and put the moka pot on it"
+    )
+    assert clean_instruction("pick_up_the_black_bowl_on_the_table_center_and_place_it_on_the_plate_tb_3") == (
+        "pick up the black bowl on the table center and place it on the plate"
+    )
+    assert clean_instruction("KITCHEN_SCENE8_put_both_moka_pots_on_the_stove_language_7_view_0_0_100_0_0_initstate_0") is None
+    raw = json.loads(open("configs/task_classification.json").read())
+    for rows in raw.values():
+        for r in rows:
+            text = clean_instruction(r["name"])
+            if text is not None:
+                assert not re.search(r"\d|SCENE|initstate|sample", text), r["name"]

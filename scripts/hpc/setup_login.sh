@@ -19,9 +19,14 @@ eval "$(conda shell.bash hook)" && conda activate "$RQ_ENV"
 git -C "$RQ_SRC/LIBERO-plus" checkout -q "$LIBERO_PLUS_REV"
 
 # Install order follows the LeRobot LIBERO-plus docs.
-pip install -e "$RQ_SRC/lerobot[libero,smolvla,training]" "robosuite==1.4.1" bddl easydict mujoco wand scikit-image gym
-pip install --no-deps -e "$RQ_SRC/LIBERO-plus"
-pip uninstall -y hf-libero || true      # so `import libero` resolves to the fork
+# We don't use lerobot's `libero` extra: it pulls hf-libero, which pins robosuite==1.4.0 and
+# clashes with the robosuite==1.4.1 LIBERO-plus needs. Instead we install the extra's other
+# parts (dataset, transformers-dep, scipy-dep) plus the runtime deps hf-libero would have
+# brought, since LIBERO-plus goes in with --no-deps.
+pip install -e "$RQ_SRC/lerobot[dataset,transformers-dep,scipy-dep,smolvla,training]" \
+  "robosuite==1.4.1" "bddl==1.0.1" easydict "mujoco>=3.0.0,<3.9.0" wand scikit-image gym \
+  "robomimic==0.2.0" "hydra-core>=1.2,<1.4" hf-egl-probe einops thop "matplotlib>=3.5.3" \
+  "cloudpickle>=2.0.0" "future>=0.18.2" "gymnasium>=0.29.0" opencv-python
 pip install -e ".[dev]"                 # this repo
 
 # Write LIBERO's config so its first import never asks a question on a compute node.
